@@ -111,14 +111,13 @@ async function fetchTasks() {
             state.tasks = await response.json();
             renderTasks();
         } else {
-            console.error('Failed to fetch tasks:', response.status);
-            if (response.status === 403) {
-                handleLogout();
-            }
+            console.error('Failed to fetch tasks. Status:', response.status);
+            showToast(`Error: ${response.status} - Authentication failed`, 'error');
+            // handleLogout(); // Temporarily disabled to debug
         }
     } catch (err) {
-        console.error('Error fetching tasks:', err);
-        showToast('Failed to fetch tasks', 'error');
+        console.error('Network Error in fetchTasks:', err);
+        showToast('Network error while loading tasks', 'error');
     }
 }
 

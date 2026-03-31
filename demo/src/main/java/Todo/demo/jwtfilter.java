@@ -26,14 +26,21 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
+        
+        System.out.println("Processing request: " + request.getServletPath());
 
         if(authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             if(jwtUtil.validateJwtToken(token)) {
                 String email = jwtUtil.extractEmail(token);
+                System.out.println("JWT Validated for user: " + email);
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
                 SecurityContextHolder.getContext().setAuthentication(auth);
+            } else {
+                System.out.println("JWT Validation failed for token");
             }
+        } else if (authHeader == null) {
+            System.out.println("No Authorization header found");
         }
 
         filterChain.doFilter(request, response);
