@@ -1,9 +1,9 @@
 package Todo.demo.controller;
 
-import Todo.demo.models.todo;
-import Todo.demo.service.todoservice;
+import Todo.demo.models.Todo;
+import Todo.demo.service.TodoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,44 +11,48 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-
 @RequestMapping("/todos")
-public class todocontroller {
+public class TodoController {
 
     @Autowired
-    private todoservice todoservice;
+    private TodoService todoService;
+
     @PostMapping("/create")
-    ResponseEntity<todo> createuser(@RequestBody todo todo){
-        return new ResponseEntity<>(todoservice.createtodo(todo),HttpStatus.CREATED);
+    public ResponseEntity<Todo> createTodo(@RequestBody Todo todo){
+        return new ResponseEntity<>(todoService.createTodo(todo), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    ResponseEntity<todo> getuserbyid(@PathVariable long id){
+    public ResponseEntity<Todo> getTodoById(@PathVariable long id){
         try {
-            todo getbuyid = todoservice.getbyid(id);
-            return new ResponseEntity<>(getbuyid , HttpStatus.OK);
+            Todo todo = todoService.getById(id);
+            return new ResponseEntity<>(todo, HttpStatus.OK);
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(null , HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
+    }
 
+    @GetMapping("/page")
+    public ResponseEntity<Page<Todo>> getTodosPage(@RequestParam int page, @RequestParam int size){
+        return ResponseEntity.ok(todoService.gatodos(page, size));
     }
 
 
     @GetMapping
-    public ResponseEntity<List<todo>> getalltodos() {
-        return new ResponseEntity<>(todoservice.getalltodos(), HttpStatus.OK);
+    public ResponseEntity<List<Todo>> getAllTodos() {
+        return new ResponseEntity<>(todoService.getAllTodos(), HttpStatus.OK);
     }
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<todo> updatetodo(@PathVariable Long id, @RequestBody todo todo) {
+    public ResponseEntity<Todo> updateTodo(@PathVariable Long id, @RequestBody Todo todo) {
         todo.setId(id);
-        return new ResponseEntity<>(todoservice.updatetodo(todo), HttpStatus.OK);
+        return new ResponseEntity<>(todoService.updateTodo(todo), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deletebyid(@PathVariable Long id) {
-        todoservice.deletebyid(id);
+    public ResponseEntity<String> deleteById(@PathVariable Long id) {
+        todoService.deleteById(id);
         return new ResponseEntity<>("Todo deleted!", HttpStatus.OK);
     }
 }
