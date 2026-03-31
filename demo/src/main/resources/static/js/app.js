@@ -24,6 +24,7 @@ const toastEl = document.getElementById('toast');
 
 // --- Initialization ---
 function init() {
+    console.log('Initializing App...');
     if (state.token) {
         showDashboard();
         fetchTasks();
@@ -49,14 +50,17 @@ async function handleLogin(e) {
             const data = await response.json();
             state.token = data.token;
             localStorage.setItem('token', state.token);
+            userDisplayEmail.textContent = email;
             showDashboard();
             fetchTasks();
             showToast('Welcome back!', 'success');
         } else {
             const error = await response.text();
+            console.error('Login failed:', error);
             showToast(error || 'Login failed', 'error');
         }
     } catch (err) {
+        console.error('Network error during login:', err);
         showToast('Network error', 'error');
     }
 }
@@ -79,9 +83,11 @@ async function handleRegister(e) {
             registerForm.classList.add('hidden');
         } else {
             const error = await response.text();
+            console.error('Registration failed:', error);
             showToast(error || 'Registration failed', 'error');
         }
     } catch (err) {
+        console.error('Network error during registration:', err);
         showToast('Network error', 'error');
     }
 }
@@ -95,6 +101,7 @@ function handleLogout() {
 
 // --- Task Functions ---
 async function fetchTasks() {
+    if (!state.token) return;
     try {
         const response = await fetch(`${API_BASE}/todos`, {
             headers: { 'Authorization': `Bearer ${state.token}` }
@@ -103,10 +110,14 @@ async function fetchTasks() {
         if (response.ok) {
             state.tasks = await response.json();
             renderTasks();
-        } else if (response.status === 403) {
-            handleLogout();
+        } else {
+            console.error('Failed to fetch tasks:', response.status);
+            if (response.status === 403) {
+                handleLogout();
+            }
         }
     } catch (err) {
+        console.error('Error fetching tasks:', err);
         showToast('Failed to fetch tasks', 'error');
     }
 }
@@ -124,7 +135,7 @@ async function addTask() {
             },
             body: JSON.stringify({
                 title: title,
-                description: 'Task added from web dashboard',
+                description: 'Added via web dashboard',
                 completed: false
             })
         });
@@ -134,10 +145,10 @@ async function addTask() {
             state.tasks.push(newTask);
             newTaskInput.value = '';
             renderTasks();
-            showToast('Task added successfully', 'success');
+            showToast('Task added!', 'success');
         }
     } catch (err) {
-        showToast('Failed to add task', 'error');
+        showToast('Error adding task', 'error');
     }
 }
 
@@ -163,12 +174,12 @@ async function toggleTask(id) {
             renderTasks();
         }
     } catch (err) {
-        showToast('Update failed', 'error');
+        console.error('Toggle failed:', err);
     }
 }
 
 async function deleteTask(id) {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    if (!confirm('Delete this task?')) return;
 
     try {
         const response = await fetch(`${API_BASE}/todos/${id}`, {
@@ -182,17 +193,21 @@ async function deleteTask(id) {
             showToast('Task deleted', 'success');
         }
     } catch (err) {
-        showToast('Delete failed', 'error');
+        console.error('Delete failed:', err);
     }
 }
+
+// Make functions global for onclick
+window.toggleTask = toggleTask;
+window.deleteTask = deleteTask;
 
 // --- UI Helpers ---
 function renderTasks() {
     tasksList.innerHTML = '';
     
-    if (state.tasks.length === 0) {
-        tasksList.innerHTML = '<div class="empty-state">No tasks yet. Add one above!</div>';
-        taskStats.textContent = 'You have 0 tasks pending';
+    if (!state.tasks || state.tasks.length === 0) {
+        tasksList.innerHTML = '<div class="empty-state">No tasks. Enjoy your day!</div>';
+        taskStats.textContent = '0 tasks pending';
         return;
     }
 
@@ -203,24 +218,26 @@ function renderTasks() {
             <span>${task.title}</span>
             <div class="task-actions">
                 <button onclick="toggleTask(${task.id})" class="btn-sm btn-done">${task.completed ? 'Undo' : 'Done'}</button>
-                <button onclick="deleteTask(${task.id})" class="btn-sm btn-delete">Delete</button>
+                <button onclick="deleteTask(${task.id})" class="btn-sm btn-delete">✕</button>
             </div>
         `;
         tasksList.appendChild(el);
     });
 
     const pending = state.tasks.filter(t => !t.completed).length;
-    taskStats.textContent = `You have ${pending} task${pending !== 1 ? 's' : ''} pending`;
+    taskStats.textContent = `${pending} task${pending !== 1 ? 's' : ''} pending`;
 }
 
 function showDashboard() {
     authSection.classList.add('hidden');
     dashboardSection.classList.remove('hidden');
+    document.body.classList.add('in-dashboard');
 }
 
 function showAuth() {
     authSection.classList.remove('hidden');
     dashboardSection.classList.add('hidden');
+    document.body.classList.remove('in-dashboard');
 }
 
 function showToast(message, type) {
